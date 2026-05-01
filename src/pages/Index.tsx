@@ -48,7 +48,7 @@ export default function Index() {
 						to="/admin"
 						className="text-sm text-muted-foreground hover:text-foreground"
 					>
-						Admin
+						
 					</Link>
 				</div>
 			</header>
