@@ -23,7 +23,6 @@ export default function Index() {
 			{/* Header with Logo */}
 			<header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40">
 				<div className="container mx-auto px-4 py-4 flex items-center justify-between">
-					{/* Logo with Image */}
 					<Link
 						to="/"
 						className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -33,17 +32,17 @@ export default function Index() {
 							alt="SpaceBook Logo"
 							className="h-16 w-auto"
 						/>
-						<span className="font-heading text-xl font-bold tracking-tight text-foreground"></span>
 					</Link>
-
 					<Link
 						to="/admin"
 						className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-					></Link>
+					>
+						Admin
+					</Link>
 				</div>
 			</header>
 
-			{/* Hero Section - Updated with better text */}
+			{/* Hero Section */}
 			<section className="container mx-auto px-4 pt-16 pb-10 text-center">
 				<h2 className="font-heading text-4xl md:text-5xl font-bold text-foreground mb-4 animate-fade-up">
 					Find your perfect space
@@ -64,7 +63,6 @@ export default function Index() {
 					hassle.
 				</p>
 
-				{/* Search Bar */}
 				<div
 					className="relative max-w-md mx-auto animate-fade-up"
 					style={{ animationDelay: "200ms" }}
@@ -78,9 +76,6 @@ export default function Index() {
 					/>
 				</div>
 			</section>
-
-			{/* Stats Section - Optional but adds credibility */}
-		
 
 			{/* Spaces Grid */}
 			<section className="container mx-auto px-4 pb-20">
@@ -120,7 +115,7 @@ export default function Index() {
 				)}
 			</section>
 
-			{/* CTA Section - Footer */}
+			{/* CTA Section - WhatsApp Contact */}
 			<section className="bg-gradient-to-r from-primary/10 to-primary/5 py-16 mt-8">
 				<div className="container mx-auto px-4 text-center">
 					<h3 className="text-2xl font-bold text-foreground mb-4">
@@ -130,12 +125,14 @@ export default function Index() {
 						Join hundreds of creatives who've found their perfect retail space
 						with us.
 					</p>
-					<Link
-						to="/contact"
+					<a
+						href="https://wa.me/447501464966"
+						target="_blank"
+						rel="noopener noreferrer"
 						className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
 					>
-						Contact Us Today
-					</Link>
+						Contact Us on WhatsApp
+					</a>
 				</div>
 			</section>
 
