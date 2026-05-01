@@ -18,15 +18,26 @@ export default function Index() {
 			s.location.toLowerCase().includes(search.toLowerCase())
 	);
 
+	// Generate WhatsApp message with optional space context
+	const getWhatsAppMessage = () => {
+		let message = "Hello, I came from your SpaceBook website";
+		if (selectedSpace) {
+			message += ` and I'm interested in the space "${selectedSpace.name}" (${selectedSpace.location}).`;
+		} else {
+			message += " and I'm interested in renting a space.";
+		}
+		message += " Could you please help me with availability and pricing?";
+		return encodeURIComponent(message);
+	};
+
+	const whatsappUrl = `https://wa.me/447501464966?text=${getWhatsAppMessage()}`;
+
 	return (
 		<div className="min-h-screen bg-background">
-			{/* Header with Logo */}
+			{/* Header */}
 			<header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40">
 				<div className="container mx-auto px-4 py-4 flex items-center justify-between">
-					<Link
-						to="/"
-						className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-					>
+					<Link to="/" className="flex items-center gap-2 hover:opacity-80">
 						<img
 							src="https://res.cloudinary.com/dfmigbgri/image/upload/v1777658532/WhatsApp_Image_2026-05-01_at_15.43.08__1_-removebg-preview_o5pjuq.png"
 							alt="SpaceBook Logo"
@@ -35,7 +46,7 @@ export default function Index() {
 					</Link>
 					<Link
 						to="/admin"
-						className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+						className="text-sm text-muted-foreground hover:text-foreground"
 					>
 						Admin
 					</Link>
@@ -44,29 +55,19 @@ export default function Index() {
 
 			{/* Hero Section */}
 			<section className="container mx-auto px-4 pt-16 pb-10 text-center">
-				<h2 className="font-heading text-4xl md:text-5xl font-bold text-foreground mb-4 animate-fade-up">
+				<h2 className="font-heading text-4xl md:text-5xl font-bold mb-4 animate-fade-up">
 					Find your perfect space
 				</h2>
-				<p
-					className="text-muted-foreground text-lg max-w-2xl mx-auto mb-6 animate-fade-up"
-					style={{ animationDelay: "100ms" }}
-				>
+				<p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-6 animate-fade-up">
 					We rent out retail space to creatives and brands so they can showcase
 					and sell their products without the cost or commitment of a permanent
 					store.
 				</p>
-				<p
-					className="text-muted-foreground text-md max-w-xl mx-auto mb-8 animate-fade-up"
-					style={{ animationDelay: "150ms" }}
-				>
+				<p className="text-muted-foreground text-md max-w-xl mx-auto mb-8 animate-fade-up">
 					Browse curated studios, lofts, and venues. Book instantly with zero
 					hassle.
 				</p>
-
-				<div
-					className="relative max-w-md mx-auto animate-fade-up"
-					style={{ animationDelay: "200ms" }}
-				>
+				<div className="relative max-w-md mx-auto animate-fade-up">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
 					<Input
 						placeholder="Search by name or location..."
@@ -81,7 +82,7 @@ export default function Index() {
 			<section className="container mx-auto px-4 pb-20">
 				{isLoading ? (
 					<div className="flex items-center justify-center py-20">
-						<Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+						<Loader2 className="w-6 h-6 animate-spin" />
 					</div>
 				) : filtered && filtered.length > 0 ? (
 					<>
@@ -115,7 +116,7 @@ export default function Index() {
 				)}
 			</section>
 
-			{/* CTA Section - WhatsApp Contact */}
+			{/* CTA Section - WhatsApp with pre-filled message */}
 			<section className="bg-gradient-to-r from-primary/10 to-primary/5 py-16 mt-8">
 				<div className="container mx-auto px-4 text-center">
 					<h3 className="text-2xl font-bold text-foreground mb-4">
@@ -126,7 +127,7 @@ export default function Index() {
 						with us.
 					</p>
 					<a
-						href="https://wa.me/447501464966"
+						href={whatsappUrl}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
