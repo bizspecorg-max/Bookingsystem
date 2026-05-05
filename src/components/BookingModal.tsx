@@ -50,7 +50,6 @@ export function BookingModal({
 	);
 	const createBooking = useCreateBooking();
 
-	// Extract booked date ranges
 	const bookedRanges: BookedRange[] =
 		bookings?.map((booking) => ({
 			start_date: booking.start_date,
@@ -65,6 +64,10 @@ export function BookingModal({
 			}
 		}
 		return false;
+	};
+
+	const isSingleDayBlocked = (date: Date): boolean => {
+		return isDateBlocked(date);
 	};
 
 	const isRangeOverlapping = (from: Date, to: Date): boolean => {
@@ -89,56 +92,48 @@ export function BookingModal({
 			setDateRange(undefined);
 			return;
 		}
-		if (!range.to) {
-			setDateRange({ from: range.from, to: undefined });
-		} else {
-			const from = range.from;
-			const to = range.to;
-			if (isRangeOverlapping(from, to)) {
-				const errorMsg =
-					"❌ Space not available on these dates. Please choose different dates.";
-				setDateError(errorMsg);
-				toast.error(errorMsg);
-				setDateRange(undefined);
-				return;
-			}
-			setDateRange({ from, to });
-		}
+		// Allow selecting only start date (single day)
+		setDateRange({ from: range.from, to: range.to });
 	};
 
 	const handleContinueToForm = () => {
-		if (dateRange?.from && dateRange?.to) {
+		if (dateRange?.from) {
 			setStep("form");
 		} else {
-			toast.error("Please select both start and end dates");
+			toast.error("Please select a start date");
 		}
 	};
 
-	// Helper to calculate total price including one-time fees
-	const getTotalPrice = () => {
-		if (!space || !dateRange?.from || !dateRange?.to) return 0;
-		const days = differenceInDays(dateRange.to, dateRange.from) + 1;
+	// Helper to get the effective end date (if none, same as start)
+	const getEffectiveEndDate = (): Date | undefined => {
+		if (!dateRange?.from) return undefined;
+		return dateRange.to || dateRange.from;
+	};
+
+	const getNumberOfDays = (): number => {
+		if (!dateRange?.from) return 0;
+		const to = dateRange.to || dateRange.from;
+		return differenceInDays(to, dateRange.from) + 1;
+	};
+
+	const getTotalPrice = (): number => {
+		if (!space || !dateRange?.from) return 0;
+		const days = getNumberOfDays();
 		const rental = days * space.price;
 		const service = space.service_charge ?? 0;
 		const caution = space.caution_fee ?? 0;
 		return rental + service + caution;
 	};
 
-	const totalPrice = getTotalPrice();
-	const numberOfDays =
-		dateRange?.from && dateRange?.to
-			? differenceInDays(dateRange.to, dateRange.from) + 1
-			: 0;
-
-	const rentalAmount = numberOfDays * (space?.price ?? 0);
-	const serviceCharge = space?.service_charge ?? 0;
-	const cautionFee = space?.caution_fee ?? 0;
-
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!space || !dateRange?.from || !dateRange?.to) return;
+		if (!space || !dateRange?.from) return;
 
-		if (isRangeOverlapping(dateRange.from, dateRange.to)) {
+		const startDate = dateRange.from;
+		const endDate = dateRange.to || startDate;
+
+		// Check overlap for the determined range
+		if (isRangeOverlapping(startDate, endDate)) {
 			toast.error(
 				"Space not available – those dates are already booked. Please try another range."
 			);
@@ -147,11 +142,14 @@ export function BookingModal({
 			return;
 		}
 
+		const totalPrice = getTotalPrice();
+		const numberOfDays = getNumberOfDays();
+
 		try {
 			await createBooking.mutateAsync({
 				space_id: space.id,
-				start_date: format(dateRange.from, "yyyy-MM-dd"),
-				end_date: format(dateRange.to, "yyyy-MM-dd"),
+				start_date: format(startDate, "yyyy-MM-dd"),
+				end_date: format(endDate, "yyyy-MM-dd"),
 				first_name: form.firstName,
 				email: form.email,
 				phone: form.phone,
@@ -189,6 +187,12 @@ export function BookingModal({
 
 	const image = getSpaceImage(space.name, space.image_url, index);
 	const isPending = createBooking.isPending;
+	const effectiveEndDate = getEffectiveEndDate();
+	const numberOfDays = getNumberOfDays();
+	const totalPrice = getTotalPrice();
+	const rentalAmount = numberOfDays * space.price;
+	const serviceCharge = space.service_charge ?? 0;
+	const cautionFee = space.caution_fee ?? 0;
 
 	return (
 		<Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
@@ -227,9 +231,9 @@ export function BookingModal({
 							<h4 className="font-medium text-sm mb-3">
 								{!dateRange?.from
 									? "Select start date"
-									: !dateRange?.to
-										? "Select end date"
-										: "Dates selected"}
+									: dateRange?.to
+										? "Dates selected"
+										: "Single day selected (click another date for range)"}
 							</h4>
 							{loadingBookings ? (
 								<div className="flex items-center justify-center py-8">
@@ -250,11 +254,11 @@ export function BookingModal({
 											{dateError}
 										</div>
 									)}
-									{dateRange?.from && dateRange?.to && (
+									{dateRange?.from && effectiveEndDate && (
 										<div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-2">
 											<div className="flex justify-between items-center mb-2">
 												<span className="text-sm font-medium">
-													Selected Dates:
+													{dateRange.to ? "Selected Dates:" : "Selected Date:"}
 												</span>
 												<button
 													type="button"
@@ -268,8 +272,9 @@ export function BookingModal({
 												</button>
 											</div>
 											<p className="text-sm">
-												{format(dateRange.from, "MMM d, yyyy")} -{" "}
-												{format(dateRange.to, "MMM d, yyyy")}
+												{format(dateRange.from, "MMM d, yyyy")}
+												{dateRange.to &&
+													` - ${format(dateRange.to, "MMM d, yyyy")}`}
 											</p>
 											<div className="border-t pt-2 mt-2 space-y-1">
 												<div className="flex justify-between text-sm">
@@ -300,7 +305,7 @@ export function BookingModal({
 									)}
 									<Button
 										onClick={handleContinueToForm}
-										disabled={!dateRange?.from || !dateRange?.to}
+										disabled={!dateRange?.from}
 										className="w-full mt-4"
 									>
 										Continue to Booking
@@ -310,13 +315,13 @@ export function BookingModal({
 						</div>
 					)}
 
-					{step === "form" && dateRange?.from && dateRange?.to && (
+					{step === "form" && dateRange?.from && effectiveEndDate && (
 						<form onSubmit={handleSubmit} className="space-y-4 animate-fade-up">
 							<div className="flex items-center gap-2 p-3 rounded-lg bg-accent text-accent-foreground text-sm">
 								<CalendarIcon className="w-4 h-4" />
 								<span className="font-medium">
-									{format(dateRange.from, "MMM d")} -{" "}
-									{format(dateRange.to, "MMM d, yyyy")}
+									{format(dateRange.from, "MMM d, yyyy")}
+									{dateRange.to && ` - ${format(dateRange.to, "MMM d, yyyy")}`}
 								</span>
 								<span className="ml-auto font-semibold">
 									₦{totalPrice.toLocaleString()}
@@ -431,8 +436,7 @@ export function BookingModal({
 							<p className="text-sm text-muted-foreground mb-1">{space.name}</p>
 							<p className="text-sm font-medium">
 								{dateRange?.from &&
-									dateRange?.to &&
-									`${format(dateRange.from, "MMMM d")} - ${format(dateRange.to, "MMMM d, yyyy")}`}
+									`${format(dateRange.from, "MMMM d")}${dateRange?.to ? ` - ${format(dateRange.to, "MMMM d, yyyy")}` : `, yyyy`}`}
 							</p>
 							<p className="text-xs text-muted-foreground mt-2 mb-6">
 								Total: ₦{totalPrice.toLocaleString()} • {numberOfDays} days

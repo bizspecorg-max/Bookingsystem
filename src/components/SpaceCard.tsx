@@ -10,7 +10,7 @@ interface SpaceCardProps {
 
 export function SpaceCard({ space, index, onSelect }: SpaceCardProps) {
 	const image = getSpaceImage(space.name, space.image_url, index);
-	const squareMeters = space.square_meters;
+	const squareMeters = space.sq_meters; // ✅ correct column name
 
 	return (
 		<div
