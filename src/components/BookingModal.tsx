@@ -43,7 +43,7 @@ export function BookingModal({
 		phone: "",
 		location: "",
 	});
-	const [dateError, setDateError] = useState<string | null>(null); // ✅ Added for inline error
+	const [dateError, setDateError] = useState<string | null>(null);
 
 	const { data: bookings, isLoading: loadingBookings } = useBookingsForSpace(
 		space?.id ?? null
@@ -56,14 +56,6 @@ export function BookingModal({
 			start_date: booking.start_date,
 			end_date: booking.end_date,
 		})) || [];
-
-	// Debug log
-	if (bookedRanges.length > 0 && space) {
-		console.log(
-			`🔍 Space "${space.name}" has ${bookedRanges.length} booked ranges:`,
-			bookedRanges
-		);
-	}
 
 	const isDateBlocked = (date: Date): boolean => {
 		const dateStr = format(date, "yyyy-MM-dd");
@@ -91,23 +83,18 @@ export function BookingModal({
 		return isDateBlocked(date);
 	};
 
-	// ✅ Fixed: Clear error on new selection, show friendly error on overlap
 	const handleDateSelect = (range: DateRange | undefined) => {
-		setDateError(null); // Clear previous error
-
+		setDateError(null);
 		if (!range?.from) {
 			setDateRange(undefined);
 			return;
 		}
-
 		if (!range.to) {
 			setDateRange({ from: range.from, to: undefined });
 		} else {
 			const from = range.from;
 			const to = range.to;
-
 			if (isRangeOverlapping(from, to)) {
-				// Friendly error message
 				const errorMsg =
 					"❌ Space not available on these dates. Please choose different dates.";
 				setDateError(errorMsg);
@@ -115,7 +102,6 @@ export function BookingModal({
 				setDateRange(undefined);
 				return;
 			}
-
 			setDateRange({ from, to });
 		}
 	};
@@ -128,11 +114,25 @@ export function BookingModal({
 		}
 	};
 
-	const calculateTotalPrice = (): number => {
+	// Helper to calculate total price including one-time fees
+	const getTotalPrice = () => {
 		if (!space || !dateRange?.from || !dateRange?.to) return 0;
 		const days = differenceInDays(dateRange.to, dateRange.from) + 1;
-		return days * space.price;
+		const rental = days * space.price;
+		const service = space.service_charge ?? 0;
+		const caution = space.caution_fee ?? 0;
+		return rental + service + caution;
 	};
+
+	const totalPrice = getTotalPrice();
+	const numberOfDays =
+		dateRange?.from && dateRange?.to
+			? differenceInDays(dateRange.to, dateRange.from) + 1
+			: 0;
+
+	const rentalAmount = numberOfDays * (space?.price ?? 0);
+	const serviceCharge = space?.service_charge ?? 0;
+	const cautionFee = space?.caution_fee ?? 0;
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -147,9 +147,6 @@ export function BookingModal({
 			return;
 		}
 
-		const totalPrice = calculateTotalPrice();
-		const numberOfDays = differenceInDays(dateRange.to, dateRange.from) + 1;
-
 		try {
 			await createBooking.mutateAsync({
 				space_id: space.id,
@@ -162,14 +159,12 @@ export function BookingModal({
 				total_price: totalPrice,
 				status: "pending",
 			});
-
 			setStep("success");
 			toast.success(`Booking request submitted for ${numberOfDays} day(s)!`);
 		} catch (error: unknown) {
 			console.error("Booking error:", error);
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to create booking";
-
 			if (errorMessage.includes("overlap")) {
 				toast.error(
 					"These dates were just booked by someone else. Please pick different dates."
@@ -193,11 +188,6 @@ export function BookingModal({
 	if (!space) return null;
 
 	const image = getSpaceImage(space.name, space.image_url, index);
-	const totalPrice = calculateTotalPrice();
-	const numberOfDays =
-		dateRange?.from && dateRange?.to
-			? differenceInDays(dateRange.to, dateRange.from) + 1
-			: 0;
 	const isPending = createBooking.isPending;
 
 	return (
@@ -241,7 +231,6 @@ export function BookingModal({
 										? "Select end date"
 										: "Dates selected"}
 							</h4>
-
 							{loadingBookings ? (
 								<div className="flex items-center justify-center py-8">
 									<Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -256,16 +245,13 @@ export function BookingModal({
 										className="rounded-lg border p-3 pointer-events-auto mx-auto"
 										numberOfMonths={2}
 									/>
-
-									{/* ✅ Inline error message */}
 									{dateError && (
 										<div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
 											{dateError}
 										</div>
 									)}
-
 									{dateRange?.from && dateRange?.to && (
-										<div className="mt-4 p-3 bg-primary/10 rounded-lg">
+										<div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-2">
 											<div className="flex justify-between items-center mb-2">
 												<span className="text-sm font-medium">
 													Selected Dates:
@@ -285,14 +271,33 @@ export function BookingModal({
 												{format(dateRange.from, "MMM d, yyyy")} -{" "}
 												{format(dateRange.to, "MMM d, yyyy")}
 											</p>
-											<p className="text-xs text-muted-foreground mt-1">
-												{numberOfDays} day{numberOfDays !== 1 ? "s" : ""} × ₦
-												{space.price.toLocaleString()} = ₦
-												{totalPrice.toLocaleString()}
-											</p>
+											<div className="border-t pt-2 mt-2 space-y-1">
+												<div className="flex justify-between text-sm">
+													<span>
+														{numberOfDays} day{numberOfDays !== 1 ? "s" : ""} ×
+														₦{space.price.toLocaleString()}
+													</span>
+													<span>₦{rentalAmount.toLocaleString()}</span>
+												</div>
+												{serviceCharge > 0 && (
+													<div className="flex justify-between text-sm">
+														<span>Service charge (one‑time)</span>
+														<span>₦{serviceCharge.toLocaleString()}</span>
+													</div>
+												)}
+												{cautionFee > 0 && (
+													<div className="flex justify-between text-sm">
+														<span>Caution fee (non‑refundable, one‑time)</span>
+														<span>₦{cautionFee.toLocaleString()}</span>
+													</div>
+												)}
+											</div>
+											<div className="flex justify-between font-bold pt-2 border-t">
+												<span>Total</span>
+												<span>₦{totalPrice.toLocaleString()}</span>
+											</div>
 										</div>
 									)}
-
 									<Button
 										onClick={handleContinueToForm}
 										disabled={!dateRange?.from || !dateRange?.to}
@@ -374,6 +379,31 @@ export function BookingModal({
 											setForm((f) => ({ ...f, location: e.target.value }))
 										}
 									/>
+								</div>
+							</div>
+
+							<div className="bg-muted/30 p-3 rounded-lg space-y-1 text-sm">
+								<div className="flex justify-between">
+									<span>
+										{numberOfDays} day(s) × ₦{space.price.toLocaleString()}
+									</span>
+									<span>₦{rentalAmount.toLocaleString()}</span>
+								</div>
+								{serviceCharge > 0 && (
+									<div className="flex justify-between">
+										<span>Service charge (one‑time)</span>
+										<span>₦{serviceCharge.toLocaleString()}</span>
+									</div>
+								)}
+								{cautionFee > 0 && (
+									<div className="flex justify-between">
+										<span>Caution fee (non‑refundable, one‑time)</span>
+										<span>₦{cautionFee.toLocaleString()}</span>
+									</div>
+								)}
+								<div className="flex justify-between font-bold pt-2 border-t mt-2">
+									<span>Total</span>
+									<span>₦{totalPrice.toLocaleString()}</span>
 								</div>
 							</div>
 

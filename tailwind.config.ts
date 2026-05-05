@@ -33,8 +33,8 @@ export default {
 					foreground: "hsl(var(--success-foreground))",
 				},
 				primary: {
-					DEFAULT: "hsl(var(--primary))",
-					foreground: "hsl(var(--primary-foreground))",
+					DEFAULT: "#54021B", // Changed to brand colour
+					foreground: "#ffffff", // White text on primary background
 				},
 				secondary: {
 					DEFAULT: "hsl(var(--secondary))",
